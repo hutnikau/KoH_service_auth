@@ -13,8 +13,8 @@ Globals:
 Resources:
   AuthFunction:
     Type: AWS::Serverless::Function
-    FunctionName: KoH_prod_auth
     Properties:
+      FunctionName: KoH_prod_auth
       CodeUri: ./
       Handler: main
       Runtime: go1.x
