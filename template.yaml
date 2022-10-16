@@ -21,12 +21,17 @@ Resources:
       Role: arn:aws:iam::763636035052:role/service-role/lambda-in-go-lang-executor
       Architectures:
         - x86_64
-      # Events:
-      #   CatchAll:
-      #     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-      #     Properties:
-      #       Path: /authenticate
-      #       Method: POST
+      Events:
+        Auth:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /authenticate
+            Method: POST
+        VerifyToken:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /verify_token
+            Method: GET
       Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
         Variables:
           PARAM1: VALUE
@@ -37,9 +42,9 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  # HelloWorldAPI:
-  #   Description: "API Gateway endpoint URL for Prod environment for First Function"
-  #   Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  AuthAPI:
+    Description: "API Gateway endpoint URL for Prod environment for First Function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/production/"
   AuthFunction:
     Description: "KoH auth function"
     Value: !GetAtt AuthFunction.Arn
