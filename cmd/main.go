@@ -30,7 +30,7 @@ func handler(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse
 	reqJson, _ := json.Marshal(req)
 	log.Debug().Msg(string(reqJson))
 
-	log.Debug().RawJSON("jsonfield", reqJson).Msg("Raw json")
+	log.Info().RawJSON("Raw json", reqJson).Msg("Raw json")
 
 	return handlers.UnhandledMethod()
 
