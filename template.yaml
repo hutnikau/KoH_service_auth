@@ -5,7 +5,14 @@ Description: >
   
   Sample SAM Template for KoH_service_auth
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Parameters:
+  Env:
+    Type: String
+    AllowedValues:
+      - dev
+      - prod
+    Description: Environment in which the application will be deployed. Allowed values [dev, prod]
+
 Globals:
   Function:
     Timeout: 5
@@ -14,7 +21,7 @@ Resources:
   AuthFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: KoH_prod_auth
+      FunctionName: !Sub "KoH_${Env}_auth"
       CodeUri: ./
       Handler: main
       Runtime: go1.x
@@ -25,11 +32,13 @@ Resources:
         Auth:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            ApiId: !Ref HttpApi
             Path: /authenticate
             Method: POST
         VerifyToken:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
+            ApiId: !Ref HttpApi
             Path: /verify_token
             Method: GET
       Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
@@ -37,6 +46,23 @@ Resources:
           PARAM1: VALUE
     Metadata:
       BuildMethod: makefile
+  HttpApi:
+      Type: AWS::Serverless::HttpApi
+      Properties:
+        StageName: !Ref Env
+        # Tags:
+        #   Tag: Value
+        # AccessLogSettings:
+        #   DestinationArn: !GetAtt AccessLogs.Arn
+        #   Format: $context.requestId
+        # DefaultRouteSettings:
+        #   ThrottlingBurstLimit: 200
+        # RouteSettings:
+        #   "GET /path":
+        #     ThrottlingBurstLimit: 500 # overridden in HttpApi Event
+        # StageVariables:
+        #   StageVar: Value
+        # FailOnWarnings: true
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -44,7 +70,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   AuthAPI:
     Description: "API Gateway endpoint URL for Prod environment for First Function"
-    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/production/"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Env}/"
   AuthFunction:
     Description: "KoH auth function"
     Value: !GetAtt AuthFunction.Arn
