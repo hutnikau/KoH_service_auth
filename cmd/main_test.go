@@ -9,8 +9,8 @@ import (
 )
 
 func TestHandler(test *testing.T) {
-	request := events.APIGatewayProxyRequest{
-		Path: "authenticate",
+	request := events.APIGatewayV2HTTPRequest{
+		RawPath: "/authenticate",
 		Body: `{
 			"login" : "john",
 			"password" : "doe"

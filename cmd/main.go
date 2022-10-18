@@ -23,23 +23,19 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler(req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+func handler(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	reqJson, _ := json.Marshal(req)
-	log.Debug().Msg(string(reqJson))
-
 	log.Info().RawJSON("Raw json", reqJson).Msg("Raw json")
 
-	return handlers.UnhandledMethod()
-
-	switch req.Path {
-	case "authenticate":
+	switch req.RequestContext.RouteKey {
+	case "POST /authenticate":
 		body := authenticateBody{}
 		_ = json.Unmarshal([]byte(req.Body), &body)
 		return handlers.Authenticate(body.Login, body.Password)
-	case "verify_token":
+	case "GET /verify_token":
 		body := verifyTokenBody{}
 		_ = json.Unmarshal([]byte(req.Body), &body)
 		return handlers.VerifyToken(body.Token)
