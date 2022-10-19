@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"errors"
-	"os"
 	"service-auth/pkg/model"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/google/uuid"
 
 	"github.com/rs/zerolog/log"
 )
@@ -28,16 +28,18 @@ func NewTokenRepository() TokenRepository {
 	d := dynamodb.New(sess)
 	r := TokenRepository{
 		d: d,
-		t: os.Getenv("TOKENS_TABLE_NAME"),
+		t: "KoH_TokensTable",
 	}
 
 	return r
 }
 
 func (r TokenRepository) RegenerageToken(user *model.User) *model.Token {
-	token := new(model.Token)
-	token.Token = time.Now().String()
-	token.UserId = (*user).Id
+	token := model.Token{
+		Token:     uuid.New().String(),
+		UserId:    (*user).Id,
+		CreatedAt: time.Now().Unix(),
+	}
 
 	av, err := dynamodbattribute.MarshalMap(token)
 	if err != nil {
@@ -47,33 +49,46 @@ func (r TokenRepository) RegenerageToken(user *model.User) *model.Token {
 		Item:      av,
 		TableName: aws.String(r.t),
 	}
-	log.Info().Msgf("Token %s stored for user %s", token.Token, token.UserId)
-	r.d.PutItem(input)
 
-	return token
+	_, err = r.d.PutItem(input)
+
+	if err != nil {
+		log.Fatal().Msgf("Error during saving token: %s", err)
+	}
+
+	(*user).Token = token.Token
+	return &token
 }
 
 func (r TokenRepository) FetchUserIdByToken(token string) (string, error) {
-	result, err := r.d.GetItem(&dynamodb.GetItemInput{
+	queryInput := &dynamodb.QueryInput{
 		TableName: aws.String(r.t),
-		Key: map[string]*dynamodb.AttributeValue{
-			"Token": {
-				S: aws.String(token),
+		KeyConditions: map[string]*dynamodb.Condition{
+			"token": {
+				ComparisonOperator: aws.String("EQ"),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						S: aws.String(token),
+					},
+				},
 			},
 		},
-	})
+	}
+
+	tokenItem := model.Token{}
+	result, err := r.d.Query(queryInput)
 
 	if err != nil {
 		log.Fatal().Msgf("Cannot fetch token: %s", err)
 	}
 
-	if result.Item == nil {
+	log.Log().Interface("result.Items", result.Items).Msg("result")
+
+	if len(result.Items) == 0 {
 		return "", errors.New("could not find token")
 	}
 
-	tokenItem := model.Token{}
-
-	err = dynamodbattribute.UnmarshalMap(result.Item, &tokenItem)
+	err = dynamodbattribute.UnmarshalMap(result.Items[0], &tokenItem)
 	if err != nil {
 		log.Fatal().Msgf("Failed to unmarshal Token: %s", err)
 	}

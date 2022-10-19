@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"errors"
-	"os"
 	"service-auth/pkg/model"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -27,7 +26,7 @@ func NewUserRepository() UserRepository {
 	d := dynamodb.New(sess)
 	r := UserRepository{
 		d: d,
-		t: os.Getenv("TOKENS_TABLE_NAME"),
+		t: "KoH_UsersTable",
 	}
 
 	return r
@@ -37,7 +36,7 @@ func (userRepo UserRepository) FetchUserById(userId string) (model.User, error) 
 	result, err := userRepo.d.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(userRepo.t),
 		Key: map[string]*dynamodb.AttributeValue{
-			"Id": {
+			"id": {
 				S: aws.String(userId),
 			},
 		},
@@ -61,28 +60,36 @@ func (userRepo UserRepository) FetchUserById(userId string) (model.User, error) 
 }
 
 func (userRepo UserRepository) FetchUserByLogin(login string) (model.User, error) {
-	result, err := userRepo.d.GetItem(&dynamodb.GetItemInput{
-		TableName: aws.String(userRepo.t),
-		Key: map[string]*dynamodb.AttributeValue{
-			"Login": {
-				S: aws.String(login),
-			},
-		},
-	})
-
-	if err != nil {
-		log.Fatal().Msgf("Cannot fetch user by login: %s", err)
-	}
-
 	userItem := model.User{}
 
-	if result.Item == nil {
+	queryInput := &dynamodb.QueryInput{
+		TableName: aws.String(userRepo.t),
+		IndexName: aws.String("KoH_UsersLogin"),
+		KeyConditions: map[string]*dynamodb.Condition{
+			"login": {
+				ComparisonOperator: aws.String("EQ"),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						S: aws.String(login),
+					},
+				},
+			},
+		},
+	}
+
+	result, err := userRepo.d.Query(queryInput)
+
+	if err != nil {
+		log.Panic().Msgf("Cannot fetch user by login: %s", err)
+	}
+
+	if len(result.Items) == 0 {
 		return userItem, errors.New("could not find user by login")
 	}
 
-	err = dynamodbattribute.UnmarshalMap(result.Item, &userItem)
+	err = dynamodbattribute.UnmarshalMap(result.Items[0], &userItem)
 	if err != nil {
-		log.Fatal().Msgf("Failed to unmarshal User: %s", err)
+		log.Panic().Msgf("Failed to unmarshal User: %s", err)
 	}
 	return userItem, nil
 }

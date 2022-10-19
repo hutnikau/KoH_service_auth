@@ -7,16 +7,11 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 type authenticateBody struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
-}
-
-type verifyTokenBody struct {
-	Token string `json:"token"`
 }
 
 func main() {
@@ -27,8 +22,8 @@ func handler(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPRespon
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	reqJson, _ := json.Marshal(req)
-	log.Info().RawJSON("Raw json", reqJson).Msg("Raw json")
+	// reqJson, _ := json.Marshal(req)
+	// log.Info().RawJSON("Raw json", reqJson).Msg("Request")
 
 	switch req.RequestContext.RouteKey {
 	case "POST /authenticate":
@@ -36,9 +31,9 @@ func handler(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPRespon
 		_ = json.Unmarshal([]byte(req.Body), &body)
 		return handlers.Authenticate(body.Login, body.Password)
 	case "GET /verify_token":
-		body := verifyTokenBody{}
-		_ = json.Unmarshal([]byte(req.Body), &body)
-		return handlers.VerifyToken(body.Token)
+		if token, ok := req.QueryStringParameters["token"]; ok {
+			return handlers.VerifyToken(token)
+		}
 	}
 	return handlers.UnhandledMethod()
 }
