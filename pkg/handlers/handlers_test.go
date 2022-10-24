@@ -7,7 +7,10 @@ import (
 )
 
 func TestAuthenticateFail(test *testing.T) {
-	response, _ := Authenticate("a", "b")
+	userRepo, tokenRepo := NewUserRepository(), NewTokenRepository()
+
+	h := NewHandler(&userRepo, &tokenRepo)
+	response, _ := h.Authenticate("a", "b")
 	if response.StatusCode != 400 {
 		test.Errorf("Expected status code 400")
 	}
@@ -17,7 +20,10 @@ func TestAuthenticateFail(test *testing.T) {
 }
 
 func TestAuthenticate(test *testing.T) {
-	response, _ := Authenticate("john", "doe")
+	userRepo, tokenRepo := NewUserRepository(), NewTokenRepository()
+
+	h := NewHandler(&userRepo, &tokenRepo)
+	response, _ := h.Authenticate("john", "doe")
 	if response.StatusCode != 200 {
 		test.Errorf("Expected status code 200")
 	}

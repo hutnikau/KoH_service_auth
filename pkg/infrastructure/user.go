@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"errors"
+	"service-auth/pkg/handlers"
 	"service-auth/pkg/model"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,19 +13,18 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type UserRepository struct {
+type DynamodbUserRepository struct {
 	d *dynamodb.DynamoDB
 	t string
 }
 
-func NewUserRepository() UserRepository {
-
+func NewUserRepository() handlers.UserRepository {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
 	d := dynamodb.New(sess)
-	r := UserRepository{
+	r := DynamodbUserRepository{
 		d: d,
 		t: "KoH_UsersTable",
 	}
@@ -32,7 +32,7 @@ func NewUserRepository() UserRepository {
 	return r
 }
 
-func (userRepo UserRepository) FetchUserById(userId string) (model.User, error) {
+func (userRepo DynamodbUserRepository) FetchUserById(userId string) (model.User, error) {
 	result, err := userRepo.d.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(userRepo.t),
 		Key: map[string]*dynamodb.AttributeValue{
@@ -59,7 +59,7 @@ func (userRepo UserRepository) FetchUserById(userId string) (model.User, error) 
 	return userItem, nil
 }
 
-func (userRepo UserRepository) FetchUserByLogin(login string) (model.User, error) {
+func (userRepo DynamodbUserRepository) FetchUserByLogin(login string) (model.User, error) {
 	userItem := model.User{}
 
 	queryInput := &dynamodb.QueryInput{

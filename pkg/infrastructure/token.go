@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"errors"
+	"service-auth/pkg/handlers"
 	"service-auth/pkg/model"
 	"time"
 
@@ -14,19 +15,18 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type TokenRepository struct {
+type DynamodbTokenRepository struct {
 	d *dynamodb.DynamoDB
 	t string
 }
 
-func NewTokenRepository() TokenRepository {
-
+func NewTokenRepository() handlers.TokenRepository {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
 	d := dynamodb.New(sess)
-	r := TokenRepository{
+	r := DynamodbTokenRepository{
 		d: d,
 		t: "KoH_TokensTable",
 	}
@@ -34,7 +34,7 @@ func NewTokenRepository() TokenRepository {
 	return r
 }
 
-func (r TokenRepository) RegenerageToken(user *model.User) *model.Token {
+func (r DynamodbTokenRepository) RegenerageToken(user *model.User) *model.Token {
 	token := model.Token{
 		Token:     uuid.New().String(),
 		UserId:    (*user).Id,
@@ -60,7 +60,8 @@ func (r TokenRepository) RegenerageToken(user *model.User) *model.Token {
 	return &token
 }
 
-func (r TokenRepository) FetchUserIdByToken(token string) (string, error) {
+func (r DynamodbTokenRepository) FetchUserIdByToken(token string) (string, error) {
+	tokenItem := model.Token{}
 	queryInput := &dynamodb.QueryInput{
 		TableName: aws.String(r.t),
 		KeyConditions: map[string]*dynamodb.Condition{
@@ -75,14 +76,10 @@ func (r TokenRepository) FetchUserIdByToken(token string) (string, error) {
 		},
 	}
 
-	tokenItem := model.Token{}
 	result, err := r.d.Query(queryInput)
-
 	if err != nil {
-		log.Fatal().Msgf("Cannot fetch token: %s", err)
+		log.Panic().Msgf("Cannot fetch token: %s", err)
 	}
-
-	log.Log().Interface("result.Items", result.Items).Msg("result")
 
 	if len(result.Items) == 0 {
 		return "", errors.New("could not find token")
@@ -90,7 +87,7 @@ func (r TokenRepository) FetchUserIdByToken(token string) (string, error) {
 
 	err = dynamodbattribute.UnmarshalMap(result.Items[0], &tokenItem)
 	if err != nil {
-		log.Fatal().Msgf("Failed to unmarshal Token: %s", err)
+		log.Panic().Msgf("Failed to unmarshal Token: %s", err)
 	}
 	return tokenItem.UserId, nil
 }

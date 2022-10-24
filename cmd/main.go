@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"service-auth/pkg/handlers"
+	"service-auth/pkg/infrastructure"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -25,14 +26,17 @@ func handler(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPRespon
 	// reqJson, _ := json.Marshal(req)
 	// log.Info().RawJSON("Raw json", reqJson).Msg("Request")
 
+	userRepo, tokenRepo := infrastructure.NewUserRepository(), infrastructure.NewTokenRepository()
+	h := handlers.NewHandler(&userRepo, &tokenRepo)
+
 	switch req.RequestContext.RouteKey {
 	case "POST /authenticate":
 		body := authenticateBody{}
 		_ = json.Unmarshal([]byte(req.Body), &body)
-		return handlers.Authenticate(body.Login, body.Password)
+		return h.Authenticate(body.Login, body.Password)
 	case "GET /verify_token":
 		if token, ok := req.QueryStringParameters["token"]; ok {
-			return handlers.VerifyToken(token)
+			return h.VerifyToken(token)
 		}
 	}
 	return handlers.UnhandledMethod()
