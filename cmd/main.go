@@ -27,7 +27,7 @@ func handler(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPRespon
 	// log.Info().RawJSON("Raw json", reqJson).Msg("Request")
 
 	userRepo, tokenRepo := infrastructure.NewUserRepository(), infrastructure.NewTokenRepository()
-	h := handlers.NewHandler(&userRepo, &tokenRepo)
+	h := handlers.NewHandler(userRepo, tokenRepo)
 
 	switch req.RequestContext.RouteKey {
 	case "POST /authenticate":

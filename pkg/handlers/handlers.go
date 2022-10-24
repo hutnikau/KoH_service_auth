@@ -15,10 +15,10 @@ type Handler struct {
 	tokenRepo TokenRepository
 }
 
-func NewHandler(userRepo *UserRepository, tokenRepo *TokenRepository) *Handler {
+func NewHandler(userRepo UserRepository, tokenRepo TokenRepository) *Handler {
 	h := &Handler{
-		userRepo:  *userRepo,
-		tokenRepo: *tokenRepo,
+		userRepo:  userRepo,
+		tokenRepo: tokenRepo,
 	}
 	return h
 }
@@ -31,7 +31,7 @@ func (h *Handler) Authenticate(login string, password string) (*events.APIGatewa
 	}
 
 	if user.IsPasswordValid(password) {
-		h.tokenRepo.RegenerageToken(&user)
+		h.tokenRepo.RegenerateToken(&user)
 		user.Password = ""
 		return apiResponse(http.StatusOK, user)
 	}

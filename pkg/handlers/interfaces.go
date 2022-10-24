@@ -3,7 +3,7 @@ package handlers
 import "service-auth/pkg/model"
 
 type TokenRepository interface {
-	RegenerageToken(user *model.User) *model.Token
+	RegenerateToken(user *model.User) *model.Token
 	FetchUserIdByToken(token string) (string, error)
 }
 

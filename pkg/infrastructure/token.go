@@ -34,7 +34,7 @@ func NewTokenRepository() handlers.TokenRepository {
 	return r
 }
 
-func (r DynamodbTokenRepository) RegenerageToken(user *model.User) *model.Token {
+func (r DynamodbTokenRepository) RegenerateToken(user *model.User) *model.Token {
 	token := model.Token{
 		Token:     uuid.New().String(),
 		UserId:    (*user).Id,
